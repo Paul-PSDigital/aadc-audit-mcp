@@ -1,0 +1,53 @@
+{
+  "name": "aadc-audit-mcp",
+  "version": "0.3.0",
+  "description": "Local stdio MCP server (and CLI) that audits a software project against the UK ICO Age Appropriate Design Code (the Children's Code). Runs entirely on the user's machine; no source code leaves the device.",
+  "keywords": [
+    "aadc",
+    "age-appropriate-design-code",
+    "childrens-code",
+    "ico",
+    "uk",
+    "mcp",
+    "model-context-protocol",
+    "compliance",
+    "kids",
+    "audit"
+  ],
+  "license": "MIT",
+  "author": "Paul Sellars (PSDigital)",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Paul-PSDigital/aadc-audit-mcp.git"
+  },
+  "type": "module",
+  "bin": {
+    "aadc": "./dist/cli.js",
+    "aadc-audit-mcp": "./dist/cli.js"
+  },
+  "files": [
+    "dist/",
+    "aadc/",
+    "templates/",
+    "workflows/",
+    "examples/",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/cli.js",
+    "prepublishOnly": "npm run build"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.4.0"
+  }
+}

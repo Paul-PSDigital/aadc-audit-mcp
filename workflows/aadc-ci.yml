@@ -1,0 +1,53 @@
+# AADC compliance checks (npm CLI mode).
+#
+# Drop this into .github/workflows/ of your project. Customise the env
+# block below with your project's allowlists (see each AADC_* var for
+# the supported values).
+
+name: AADC compliance
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: aadc-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    name: aadc audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      # ====== CUSTOMISE BELOW ==========================================
+      # Per-language allowlists. Leave a var empty to use the built-in
+      # default (a small "safe by default" set). See README for guidance.
+
+      AADC_PERM_ALLOWLIST_IOS: ""
+      AADC_PERM_ALLOWLIST_ANDROID: ""
+      AADC_SDK_ALLOWLIST_FLUTTER: ""
+      AADC_SDK_ALLOWLIST_NPM: ""
+      AADC_SDK_ALLOWLIST_PYTHON: ""
+
+      # Comma- or space-separated list of paths inside your repo that
+      # must NEVER make network calls (microphone, camera, on-device-
+      # only data handlers). Leave empty to skip the network-isolation
+      # audit.
+      AADC_PROTECTED_PATHS: ""
+      # ====== /CUSTOMISE ===============================================
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install aadc-audit-mcp
+        run: npm install -g aadc-audit-mcp
+
+      - name: Run audit
+        run: aadc audit .
