@@ -2,7 +2,7 @@
 # One-shot install: copy the skill's scaffolding into a target project.
 #
 # Usage:
-#   /path/to/claude-aadc-audit/scripts/install.sh /path/to/your/project
+#   /path/to/aadc-audit-mcp/legacy-bash/install.sh /path/to/your/project
 #
 # Idempotent: re-running won't overwrite a user-edited AUDIT.md or
 # privacy policy. The canonical ICO text under aadc/ IS refreshed.
@@ -17,7 +17,7 @@ if [ -z "$target" ]; then
 fi
 target="$(cd "$target" && pwd)"
 
-echo "Installing claude-aadc-audit into: $target"
+echo "Installing aadc-audit-mcp into: $target"
 
 mkdir -p "$target/docs/regulations/aadc"
 mkdir -p "$target/docs/handover"

@@ -12,7 +12,7 @@
 set -euo pipefail
 
 # Resolve where the audit scripts live. Two installation shapes:
-#   (a) running from the skill itself: $here = .../claude-aadc-audit/scripts
+#   (a) running from the repo itself:  $here = .../aadc-audit-mcp/legacy-bash
 #   (b) installed into a target repo:   $here = .../tools/aadc
 # In both cases the sibling audit-*.sh scripts are right next to us.
 here="$(cd "$(dirname "$0")" && pwd)"

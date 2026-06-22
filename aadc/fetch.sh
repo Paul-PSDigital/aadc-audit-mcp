@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Refresh the local mirror of the UK ICO Age Appropriate Design Code.
 #
-# Run this at least annually (per operations.md chore calendar) and
+# Run this at least annually and
 # diff the result against the previous committed state to catch any
 # updates the ICO has made to the Code wording.
 #
