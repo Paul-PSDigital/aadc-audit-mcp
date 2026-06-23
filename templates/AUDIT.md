@@ -1,5 +1,5 @@
 ---
-title: "{{PROJECT_NAME}}: UK ICO Age Appropriate Design Code — audit"
+title: "{{PROJECT_NAME}}: UK ICO Age Appropriate Design Code audit"
 subtitle: "Per-standard evidence + automated check status"
 author: "{{PROJECT_OWNER}}"
 date: "{{TODAY}}"

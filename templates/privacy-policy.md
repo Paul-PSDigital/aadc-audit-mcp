@@ -41,7 +41,7 @@ summary is at the top; the detail follows.
 ## 3. Legal basis (UK GDPR)
 
 {{State your lawful basis (typically "legitimate interest" for a
-free clinical / educational kids' app) and explain the balance with
+free kids' app) and explain the balance with
 the child's interests under the UK ICO's Age Appropriate Design
 Code.}}
 
@@ -54,8 +54,8 @@ nudges off, geolocation off, etc).}}
 
 ## 5. Third-party services
 
-{{For each third party that ever sees user data — typically just
-crash reporting like Sentry — disclose: what data, why, retention,
+{{For each third party that ever sees user data (typically just
+crash reporting like Sentry) disclose: what data, why, retention,
 opt-out path.}}
 
 ## 6. Data retention

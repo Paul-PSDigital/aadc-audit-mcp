@@ -1,0 +1,10 @@
+name: app_b
+publish_to: none
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  firebase_analytics: ^10.0.0

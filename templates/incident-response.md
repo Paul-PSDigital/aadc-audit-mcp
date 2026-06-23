@@ -22,7 +22,8 @@ Print this page out. Keep it next to the laptop you ship from.
 3. **Log everything** as you go. Screenshots, version numbers,
    time stamps.
 4. **Tell {{KEY_STAKEHOLDER}}** before posting anything externally.
-5. **File the ISO 14971 entry** (or equivalent) at the end.
+5. **File the hazard / risk log entry** at the end (e.g. ISO 14971
+   if you ship a regulated product, or your own risk register).
 
 ---
 
@@ -73,15 +74,16 @@ strain, seizure, etc).
 
 **Immediate action** (highest priority of any scenario):
 1. {{Flag off every implicated feature in production}}.
-2. {{Phone clinical lead}}.
-3. Wait for clinical sign-off before re-enabling anything.
+2. {{Phone your safety / incident lead}}.
+3. Wait for sign-off from your safety lead before re-enabling
+   anything.
 
 **Rollback path**: Feature-flag flip.
 
 **Comms**:
-- Reporting family: phone call from clinical lead same day.
-- {{Regulator if applicable (MHRA / CQC / etc)}} if implicated as a
-  medical device.
+- Reporting family: phone call from your incident lead same day.
+- {{Regulator if applicable}} if a regulated product is implicated
+  (e.g. MHRA / CQC for a medical device).
 
 ---
 
@@ -102,12 +104,12 @@ strain, seizure, etc).
 ### To a reporting parent (within 24 hours)
 
 > Thank you for telling us. We have read your report and have
-> already turned off the [feature name]. {{Clinical lead}} will be
+> already turned off the [feature name]. {{Your safety lead}} will be
 > in touch [today / by <date>]. If your child is in any discomfort,
-> please contact your GP or NHS 111; this app is a support tool, not
-> a substitute for clinical care.
+> please seek appropriate medical advice; this app is a support tool,
+> not a substitute for professional care.
 >
-> — {{PROJECT_NAME}} team
+> -- {{PROJECT_NAME}} team
 
 ## After-action review
 

@@ -35,6 +35,7 @@ export async function auditPermissions(opts: AuditOptions): Promise<AuditResult>
   const iosAllow = new Set(opts.allowlists?.ios ?? DEFAULT_IOS_ALLOWLIST);
   const androidAllow = new Set(opts.allowlists?.android ?? DEFAULT_ANDROID_ALLOWLIST);
   const findings: AuditFinding[] = [];
+  let scanned = 0;
 
   // ---- iOS ----
   for (const plist of walk(opts.projectRoot, {
@@ -46,6 +47,7 @@ export async function auditPermissions(opts: AuditOptions): Promise<AuditResult>
     } catch {
       continue;
     }
+    scanned++;
     const matches = body.matchAll(/<key>([A-Za-z]+UsageDescription)<\/key>/g);
     for (const m of matches) {
       const key = m[1];
@@ -69,6 +71,7 @@ export async function auditPermissions(opts: AuditOptions): Promise<AuditResult>
     } catch {
       continue;
     }
+    scanned++;
     const matches = body.matchAll(/android:name="(android\.permission\.[A-Z_]+)"/g);
     for (const m of matches) {
       const perm = m[1];
@@ -82,12 +85,26 @@ export async function auditPermissions(opts: AuditOptions): Promise<AuditResult>
     }
   }
 
+  if (scanned === 0) {
+    return {
+      id: 'permissions',
+      title: 'Native permission allowlist',
+      standards: [8, 10],
+      severity: 'pass',
+      findings: [],
+      applicable: false,
+      scanned: 0,
+      summary: 'No iOS Info.plist or Android AndroidManifest.xml files found; no native permissions to audit.',
+    };
+  }
+
   return {
     id: 'permissions',
     title: 'Native permission allowlist',
     standards: [8, 10],
     severity: findings.length === 0 ? 'pass' : 'fail',
     findings,
+    scanned,
     summary:
       findings.length === 0
         ? 'Every declared native permission is on the AADC allowlist.'

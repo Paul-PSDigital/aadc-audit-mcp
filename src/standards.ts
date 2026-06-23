@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
 
 const here = dirname(fileURLToPath(import.meta.url));
-// dist/standards.js → package root
+// dist/standards.js -> package root
 const PACKAGE_ROOT = resolve(here, '..');
 const AADC_DIR = join(PACKAGE_ROOT, 'aadc');
 

@@ -17,18 +17,111 @@ Fifteen MCP tools, all local-only: twelve individual audits, plus `audit_all`, `
 | `aadc.audit_all` | Run every audit against a local project root and return one consolidated result. |
 | `aadc.audit_permissions` | Inspect iOS `Info.plist` + Android `AndroidManifest.xml` for permissions outside the AADC allowlist. Standards 8, 10. |
 | `aadc.audit_sdks` | Inspect `pubspec.yaml` / `package.json` / `requirements.txt` for analytics, advertising, profiling, or tracking SDKs. Standards 5, 9, 12, 13. |
-| `aadc.audit_launchurl` | Inspect Dart `launchUrl()` calls for missing `LaunchMode.externalApplication`. Catches the "child taps a link, lands in the parent's logged-in browser" trap. Standards 11, 14. |
+| `aadc.audit_launchurl` | Inspect Dart `launchUrl()` calls and web external-navigation escapes (`window.open`, `location` assignment, `<a target="_blank">`) for outbound links that dump a child into the parent's logged-in browser. Standards 11, 14. |
 | `aadc.audit_network_isolation` | Inspect declared protected paths (microphone, camera, on-device-only data) for any network API import. Standard 8. |
 | `aadc.audit_defaults` | Heuristic warn-only scan for default-true on suspicious privacy keys (share / track / profile / etc). Standard 7. |
 | `aadc.audit_reading_grade` | Heuristic reading-grade check of user-facing copy. Standards 4, 11. |
 | `aadc.audit_placeholders` | Flag placeholder content not yet replaced (lorem ipsum, TODO, TBD, dummy text). Standards 4, 6. |
 | `aadc.audit_link_reachability` | Warn-only check of external link reachability. Standards 4, 6. |
-| `aadc.audit_volume_cap` | Require an explicit volume cap on every audio/video player. Standards 1, 14. |
+| `aadc.audit_volume_cap` | Require an explicit volume cap on every audio/video player (Dart players and HTML5 `<audio>`/`<video>` / `new Audio()`). Standards 1, 14. |
 | `aadc.audit_sentry_hygiene` | Check Sentry initialisation hygiene (e.g. no PII capture, sane sampling). Standards 7, 9. |
-| `aadc.audit_hardcoded_url` | Flag hardcoded URLs outside the CMS. Standards 4, 6. |
-| `aadc.audit_policy_mentions_sdks` | Warn-only check that the privacy policy names every external-service SDK. Standards 4, 9. |
+| `aadc.audit_hardcoded_url` | Flag hardcoded URLs outside the CMS, in Dart and web source. Standards 4, 6. |
+| `aadc.audit_policy_mentions_sdks` | Warn-only check that the privacy policy names every external-service SDK (Flutter, npm, and Python). Standards 4, 9. |
 | `aadc.list_standards` | Return the 15 AADC standards with their one-line statutory summaries. |
 | `aadc.read_standard` | Return the full ICO-published text of one standard. |
+
+### PASS, WARN, FAIL, and N/A
+
+Each audit reports one of four outcomes. An audit that has **zero relevant
+inputs to inspect** (a Dart/web audit on a project with none of those files,
+or a config-gated audit you haven't enabled) reports `[N/A]`, not a green
+`PASS`. **N/A means "not applicable", not "passed"**: "all clean" on a project
+whose stack an audit does not cover now reads as N/A so you are never lulled
+into reading a non-result as a compliance tick.
+
+N/A never affects the process exit code or the MCP `isError` flag. Only a real
+`FAIL` on an applicable audit does. The CLI prints a final tally line of the
+exact form:
+
+```
+2 passed, 1 warnings, 0 failed, 9 not applicable
+```
+
+Each audit result also carries the count of inputs it actually examined
+(`scanned N`), and the structured `AuditResult` shape exposes two optional
+fields for consumers: `applicable` (boolean) and `scanned` (number).
+
+### Per-stack coverage
+
+Not every audit fires on every stack. This matrix is what gives **real
+signal** today. A blank cell is not a failure: it just means that audit
+reports N/A on that stack (no inputs to inspect). Read it honestly: a green
+run is only meaningful for the audits that actually applied.
+
+| Audit | Flutter / Dart | Web / JS | Native manifest | Python |
+|---|:---:|:---:|:---:|:---:|
+| permissions | | | yes | |
+| sdks | yes | yes | | yes |
+| launchurl | yes | yes | | |
+| network-isolation | yes | yes | | yes |
+| defaults | yes | yes | | yes |
+| reading-grade | | | yes (Info.plist rationale) | |
+| placeholders | yes | yes | yes | |
+| link-reachability | yes | yes | | |
+| volume-cap | yes | yes | | |
+| sentry-hygiene | yes | yes | | |
+| hardcoded-url | yes | yes | | |
+| policy-mentions-sdks | yes | yes | | yes |
+
+Notes:
+
+- **Web / JS** means source with a `.js`, `.mjs`, `.cjs`, `.jsx`, `.ts`,
+  `.tsx`, `.html`, `.htm`, `.vue`, or `.svelte` extension. A vanilla HTML/JS
+  PWA now gets real signal: hardcoded URLs in JS/HTML, HTML5 `<audio>` /
+  `<video>` or `new Audio()` without an explicit volume clamp, and
+  `window.open` / `location` / `<a target="_blank">` external-navigation
+  escapes.
+- **Native manifest** means iOS `Info.plist` and Android
+  `AndroidManifest.xml`, found anywhere in the tree regardless of layout.
+- **reading-grade** parses no `.dart` (or `.js`) source at all: its only
+  inputs are the iOS `Info.plist` `*UsageDescription` rationale strings
+  (shown in the Native-manifest column) and the privacy policy. The privacy
+  policy is **config-driven** (any path via `privacyPolicyPath`) and is not
+  tied to a stack, so it does not earn a Flutter/Dart cell.
+- **sentry-hygiene** only inspects `pubspec.yaml` (`sentry_flutter`) and
+  `package.json` (`@sentry/*`), then the Dart / JS / TS init source. It never
+  reads `requirements.txt` or the Python `sentry-sdk`, so it reports N/A on a
+  Python-only project (hence the blank Python cell).
+- **placeholders** scans content and source by extension (see below); that
+  set does not include `.py` or `requirements*.txt`, so a Python-only project
+  gets no Python-source signal from it (hence the blank Python cell). It still
+  fires on any `.md` / `.json` / `.yaml` / `.xml` content a Python repo ships.
+- `network-isolation`, `link-reachability`, `sentry-hygiene`, and
+  `policy-mentions-sdks` are **config-gated** (see below); they apply to a
+  stack only once enabled, otherwise they report N/A.
+
+### Layout-agnostic discovery
+
+`reading-grade` and `policy-mentions-sdks` no longer assume an
+`apps/mobile` monorepo layout. They walk the whole project for
+`Info.plist` / `pubspec.yaml` / `package.json` / `requirements*.txt`, so any
+layout works. `policy-mentions-sdks` recognises npm and Python
+external-service SDKs (Sentry, Firebase / Google Analytics, PostHog,
+Mixpanel, Amplitude, Segment, Datadog, Hotjar, Stripe, Intercom, and others)
+in addition to the Flutter ones.
+
+### Config-gated audits report N/A, not a skipped WARN
+
+Four audits do nothing useful until you point them at something. When they
+are not enabled they report `[N/A]` (not a yellow warn-skip), and each N/A
+summary names how to switch it on:
+
+- `network-isolation` needs `protectedPaths`.
+- `link-reachability` needs `AADC_CHECK_LINKS` (it makes outbound HTTP
+  requests, so it is opt-in).
+- `policy-mentions-sdks` needs a privacy policy at the configured path.
+- `sentry-hygiene` needs a Sentry dependency (`sentry_flutter` or
+  `@sentry/*`) in the project.
 
 ## Install
 
@@ -92,14 +185,33 @@ export AADC_SDK_ALLOWLIST_FLUTTER="flutter just_audio webview_flutter ..."
 export AADC_SDK_ALLOWLIST_NPM="@cloudflare/workers-types wrangler ..."
 export AADC_SDK_ALLOWLIST_PYTHON="fastapi pydantic ..."
 export AADC_PROTECTED_PATHS="path/to/sensitive/code/dir ..."
+export AADC_TRUSTED_HOSTS="yourapp.com partner.org apps.apple.com ..."
+export AADC_FIRST_PARTY_ORIGINS="yourapp.com help.yourapp.com ..."
 
 aadc audit .
 ```
 
+`AADC_TRUSTED_HOSTS` sets the host suffixes the link-reachability
+audit will probe. It defaults to common app-store, video, and forms
+platforms plus the ICO; supply your own list (your app domains,
+partner sites, kit vendors, etc) to override it.
+
+`AADC_FIRST_PARTY_ORIGINS` declares your own site host(s) so a
+`launchUrl` / `<a target="_blank">` / `window.open` to your own help
+pages is treated as first-party and is not flagged as an external
+escape.
+
+The path/value overrides apply to **web source as well as Dart**.
+`AADC_PARENT_AREA_PATHS` (env or MCP) marks post-parent-gate surfaces
+that may legitimately open the OS browser, and the MCP-only allowlists
+`urlExemptPaths` / `urlExemptValues` (for `hardcoded-url`) and
+`volumeCapExempt` (for `volume-cap`) now match across `.js` / `.ts` /
+`.html` / `.vue` / `.svelte` as well as `.dart`.
+
 When called via MCP, the same overrides can be passed as
-`allowlists.{ios,android,flutter,npm,python,protectedPaths}` in the
-tool arguments — useful when Claude is running the audit on behalf
-of a project with project-specific allowlists.
+`allowlists.{ios,android,flutter,npm,python,protectedPaths,trustedHosts,firstPartyOrigins,parentAreaPaths,urlExemptPaths,urlExemptValues,volumeCapExempt}`
+in the tool arguments, useful when Claude is running the audit on
+behalf of a project with project-specific allowlists.
 
 ## Why MCP, why local, why kid-app-specific
 
@@ -116,8 +228,8 @@ of a project with project-specific allowlists.
   enterprise-only.** Paid third-party auditors (TestPros, BBB
   National Programs) start at five figures. Enterprise compliance
   SaaS (OneTrust, Securiti AI) assumes you have a legal team to
-  configure them. Small clinical / educational kids apps need a
-  drop-in toolkit. This is that toolkit.
+  configure them. Small kids apps need a drop-in toolkit. This is
+  that toolkit.
 
 ## What it doesn't do
 
@@ -144,6 +256,7 @@ aadc-audit-mcp/
 │       ├── index.ts           (registry)
 │       ├── types.ts           (AuditResult, AuditOptions)
 │       ├── walk.ts            (fs traversal)
+│       ├── web-source.ts      (shared web-file discovery + comment stripping)
 │       ├── permissions.ts     (Standards 8, 10)
 │       ├── sdks.ts            (Standards 5, 9, 12, 13)
 │       ├── launchurl.ts       (Standards 11, 14)
@@ -169,6 +282,7 @@ aadc-audit-mcp/
 │   └── aadc-ci.yml            (drop-in GitHub Actions workflow)
 ├── examples/
 │   └── README.md              (per-language overrides cookbook)
+├── tests/                     (node:test suite + tests/fixtures/ project trees)
 └── legacy-bash/
     └── ...                    (original bash implementation; kept for
                                 projects that can't depend on Node)
@@ -187,18 +301,31 @@ reviewed separately.
 MIT. The ICO Children's Code text mirrored under `aadc/` is
 published under the Open Government Licence v3.0. See `LICENSE`.
 
+## Development
+
+```bash
+npm run build   # compile src/ to dist/ via tsconfig.json
+npm test        # compile via tsconfig.test.json and run the suite
+```
+
+`npm test` compiles the tests with `tsconfig.test.json` and runs
+`node:test` against fixture project trees under `tests/fixtures/`. It
+adds no new dependencies (it uses Node's built-in test runner), so it
+runs anywhere the tool itself runs.
+
 ## Contributing
 
 The most useful contributions:
 
-- More language adapters (the audits cover Flutter, Node, Python
-  today; React Native specifics, iOS-Swift-only, Android-Kotlin-
-  only, .NET MAUI would all help).
+- More language adapters (the audits cover Flutter, Node, Python, and
+  vanilla web/JS today; React Native specifics, iOS-Swift-only,
+  Android-Kotlin-only, .NET MAUI would all help).
 - New checks aligned to AADC standards we haven't automated
   (Standard 13 nudge-pattern detector especially).
 - Diff-against-ICO improvements to `aadc/fetch.sh` so wording drift
   surfaces as a structured PR.
-- Integration tests against a fixture project tree.
+- More fixtures under `tests/fixtures/` covering stacks and edge cases
+  the current suite doesn't.
 
 Open issues / PRs at
 <https://github.com/Paul-PSDigital/aadc-audit-mcp>.

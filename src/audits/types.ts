@@ -15,7 +15,7 @@ export interface AuditFinding {
 }
 
 export interface AuditResult {
-  /** Stable identifier — used by MCP tool names + CLI subcommands. */
+  /** Stable identifier, used by MCP tool names + CLI subcommands. */
   id: string;
   /** Human-readable label e.g. "Native permission allowlist". */
   title: string;
@@ -25,6 +25,22 @@ export interface AuditResult {
   findings: AuditFinding[];
   /** One-line summary at the bottom of the audit output. */
   summary: string;
+  /**
+   * false => the audit had ZERO relevant inputs to inspect (e.g. a
+   * Dart/web audit run against a project with no such files, or a
+   * config-gated audit that was not enabled). Omitted defaults to
+   * applicable:true. INVARIANT: applicable:false MUST pair with
+   * severity:'pass' so a not-applicable audit can never affect the
+   * process exit code or the MCP isError flag. Rendered as N/A, not
+   * PASS, and counted separately in the report tally.
+   */
+  applicable?: boolean;
+  /**
+   * Count of files/inputs the audit actually examined, for
+   * transparency in the report. 0 on the applicable:false path;
+   * undefined is acceptable for audits not yet instrumented.
+   */
+  scanned?: number;
 }
 
 export interface AuditOptions {

@@ -43,7 +43,7 @@ const AUDIT_DESCRIPTIONS: Record<string, string> = {
     'Audit native iOS Info.plist and Android AndroidManifest.xml for any permission outside the AADC-safe allowlist. Standards 8, 10.',
   sdks: 'Audit dependency manifests (pubspec.yaml, package.json, requirements.txt) for analytics / advertising / tracking SDKs or any dependency outside the allowlist. Standards 5, 9, 12, 13.',
   launchurl:
-    'Audit Dart launchUrl() calls so kid-facing files use the safe-link helper and only declared parent-area paths may open the external browser. Standards 11, 14.',
+    'Audit Dart launchUrl() calls and web source (.js/.ts/.html etc) so kid-facing files use the safe-link helper and only declared parent-area paths may open the external browser. Standards 11, 14.',
   'network-isolation':
     'Audit declared protected paths (microphone, camera, on-device-only data) for any network API import. Standard 8.',
   defaults:
@@ -55,11 +55,11 @@ const AUDIT_DESCRIPTIONS: Record<string, string> = {
   'link-reachability':
     'Warn-only check that external links referenced in content are reachable and not dead. Standards 4, 6.',
   'volume-cap':
-    'Verify every audio/video player declares an explicit volume cap. Standards 1, 14.',
+    'Verify every audio/video player (Dart and web source: .js/.ts/.html etc) declares an explicit volume cap. Standards 1, 14.',
   'sentry-hygiene':
     'Audit Sentry error-reporting initialisation for child-data hygiene (PII scrubbing, no session replay). Standards 7, 9.',
   'hardcoded-url':
-    'Flag hardcoded URLs outside the CMS that bypass content review. Standards 4, 6.',
+    'Flag hardcoded URLs outside the CMS that bypass content review, in Dart and web source (.js/.ts/.html etc). Standards 4, 6.',
   'policy-mentions-sdks':
     'Warn-only check that the privacy policy names every external-service SDK the app depends on. Standards 4, 9.',
 };
@@ -85,9 +85,16 @@ function asOptions(args: Record<string, unknown> | undefined): AuditOptions {
   return { projectRoot, allowlists };
 }
 
-function renderResult(r: AuditResult): string {
-  const mark = r.severity.toUpperCase();
-  const head = `[${mark}] ${r.title} (AADC Standard${r.standards.length > 1 ? 's' : ''} ${r.standards.join(', ')})`;
+export function renderResult(r: AuditResult): string {
+  // A not-applicable audit (applicable:false) gets a distinct N/A token so
+  // it never reads as a green [PASS]. Scanned count is appended for
+  // transparency when present.
+  const naFlag = r.applicable === false;
+  const standardsLabel = `AADC Standard${r.standards.length > 1 ? 's' : ''} ${r.standards.join(', ')}`;
+  const scannedSuffix = typeof r.scanned === 'number' ? ` (scanned ${r.scanned})` : '';
+  const head = naFlag
+    ? `[- N/A] ${r.title} (${standardsLabel})${scannedSuffix}`
+    : `[${r.severity.toUpperCase()}] ${r.title} (${standardsLabel})${scannedSuffix}`;
   if (r.findings.length === 0) return `${head}\n${r.summary}`;
   const body = r.findings.map((f) => `  - ${f.where}: ${f.message}`).join('\n');
   return `${head}\n${body}\n\n${r.summary}`;
@@ -147,7 +154,7 @@ export async function startMcpServer(): Promise<void> {
       const results = await runAll(asOptions(args));
       return {
         content: asTextContent(results.map(renderResult).join('\n\n---\n\n')),
-        isError: results.some((r) => r.severity === 'fail'),
+        isError: results.some((r) => r.severity === 'fail' && r.applicable !== false),
       };
     }
 
@@ -158,7 +165,7 @@ export async function startMcpServer(): Promise<void> {
         const result = await fn(asOptions(args));
         return {
           content: asTextContent(renderResult(result)),
-          isError: result.severity === 'fail',
+          isError: result.severity === 'fail' && result.applicable !== false,
         };
       }
     }
