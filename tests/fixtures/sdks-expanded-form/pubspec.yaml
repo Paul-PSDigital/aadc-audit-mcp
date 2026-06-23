@@ -1,0 +1,14 @@
+name: kids_app
+description: A kids app with an expanded-form analytics dependency.
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+  mixpanel_flutter:
+    hosted: https://pub.dev
+    version: ^2.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter

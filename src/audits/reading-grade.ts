@@ -4,10 +4,16 @@
 // be "concise, prominent, clear, and suited to the child's age" and
 // "presented in clear language appropriate to the age of the child."
 //
-// This audit applies the Flesch-Kincaid Grade Level formula to:
+// This audit applies the Flesch-Kincaid Grade Level formula to the
+// privacy policy plus iOS Info.plist *UsageDescription rationale
+// strings ONLY:
 //   - The project's privacy policy (configurable path).
-//   - Any iOS / Android permission rationale strings declared in
-//     Info.plist / AndroidManifest.xml.
+//   - Any iOS permission rationale strings declared in Info.plist via
+//     the *UsageDescription keys (the sentence shown in the OS consent
+//     modal).
+// Android permissions carry no per-permission usage-description string,
+// so they are out of scope for this reading-grade check (permissions.ts
+// audits the Android allowlist separately).
 //
 // Acceptance thresholds default to a UK-pragmatic baseline:
 //   - Privacy policy targeted at parents: grade ≤ 9 (UK reading age
@@ -23,6 +29,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import type { AuditFinding, AuditOptions, AuditResult } from './types.js';
+import { walk } from './walk.js';
 
 function countSyllables(word: string): number {
   // Cheap Flesch-Kincaid-grade syllable estimator. Not perfect, but
@@ -64,11 +71,13 @@ export async function auditReadingGrade(opts: AuditOptions): Promise<AuditResult
   const privacyMax = Number(opts.options?.privacyMaxGrade ?? 9);
   const rationaleMax = Number(opts.options?.rationaleMaxGrade ?? 8);
   const findings: AuditFinding[] = [];
+  let scanned = 0;
 
   // ---- privacy policy ----
   const fullPrivacy = join(opts.projectRoot, privacyPath);
   if (existsSync(fullPrivacy)) {
     const text = readFileSync(fullPrivacy, 'utf8');
+    scanned++;
     const grade = fleschKincaidGrade(text);
     if (grade > privacyMax) {
       findings.push({
@@ -82,9 +91,16 @@ export async function auditReadingGrade(opts: AuditOptions): Promise<AuditResult
   }
 
   // ---- iOS permission rationales ----
-  const ios = join(opts.projectRoot, 'apps/mobile/ios/Runner/Info.plist');
-  if (existsSync(ios)) {
-    const body = readFileSync(ios, 'utf8');
+  for (const plist of walk(opts.projectRoot, {
+    filter: (p) => p.endsWith('/Info.plist'),
+  })) {
+    let body: string;
+    try {
+      body = readFileSync(plist, 'utf8');
+    } catch {
+      continue;
+    }
+    scanned++;
     const matches = body.matchAll(
       /<key>([A-Za-z]+UsageDescription)<\/key>\s*<string>([^<]+)<\/string>/g,
     );
@@ -94,7 +110,7 @@ export async function auditReadingGrade(opts: AuditOptions): Promise<AuditResult
       const grade = fleschKincaidGrade(desc);
       if (grade > rationaleMax) {
         findings.push({
-          where: `apps/mobile/ios/Runner/Info.plist (${key})`,
+          where: `${relative(opts.projectRoot, plist)} (${key})`,
           message: `Permission rationale reading grade ${grade.toFixed(1)} exceeds threshold ${rationaleMax}. ` +
             `Parents read this as a modal at install time, often on a phone, often quickly. ` +
             `Shorten and simplify.`,
@@ -104,12 +120,26 @@ export async function auditReadingGrade(opts: AuditOptions): Promise<AuditResult
     }
   }
 
+  if (scanned === 0) {
+    return {
+      id: 'reading-grade',
+      title: 'Reading-grade of user-facing copy',
+      standards: [4, 11],
+      severity: 'pass',
+      findings: [],
+      applicable: false,
+      scanned: 0,
+      summary: 'No privacy policy (at the configured privacyPolicyPath) and no iOS Info.plist rationale strings found; nothing to grade.',
+    };
+  }
+
   return {
     id: 'reading-grade',
     title: 'Reading-grade of user-facing copy',
     standards: [4, 11],
     severity: findings.length === 0 ? 'pass' : 'fail',
     findings,
+    scanned,
     summary:
       findings.length === 0
         ? `Privacy policy + permission rationales all at or below the configured grade thresholds.`

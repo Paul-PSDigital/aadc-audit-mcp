@@ -38,6 +38,8 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "start": "node dist/cli.js",
+    "build:test": "tsc -p tsconfig.test.json",
+    "test": "npm run build:test && node --test dist-test/tests/hardcoded-url.test.js dist-test/tests/volume-cap.test.js dist-test/tests/launchurl.test.js dist-test/tests/permissions.test.js dist-test/tests/sdks.test.js dist-test/tests/reading-grade.test.js dist-test/tests/policy-mentions-sdks.test.js dist-test/tests/sentry-hygiene.test.js dist-test/tests/network-isolation.test.js dist-test/tests/link-reachability.test.js dist-test/tests/defaults.test.js dist-test/tests/placeholders.test.js dist-test/tests/applicability-contract.test.js dist-test/tests/renderers.test.js dist-test/tests/web-source.test.js",
     "prepublishOnly": "npm run build"
   },
   "engines": {

@@ -1,5 +1,7 @@
 node_modules/
 dist/
+dist-test/
+.design-notes/
 *.tgz
 .DS_Store
 *.log

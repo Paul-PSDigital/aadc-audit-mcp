@@ -1,0 +1,9 @@
+{
+  "name": "policy-npm-web",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@sentry/browser": "^7",
+    "posthog-js": "^1"
+  }
+}

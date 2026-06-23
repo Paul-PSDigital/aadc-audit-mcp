@@ -21,6 +21,7 @@ export async function auditDefaults(opts: AuditOptions): Promise<AuditResult> {
     ? new RegExp(opts.options.suspiciousKeyRegex, 'i')
     : DEFAULT_KEY_PATTERN;
   const findings: AuditFinding[] = [];
+  let scanned = 0;
 
   // Dart: anything that looks like a `default(_value)? = true` on a
   // suspicious key.
@@ -29,6 +30,7 @@ export async function auditDefaults(opts: AuditOptions): Promise<AuditResult> {
   })) {
     let body: string;
     try { body = readFileSync(file, 'utf8'); } catch { continue; }
+    scanned++;
     const lines = body.split('\n');
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
@@ -50,10 +52,16 @@ export async function auditDefaults(opts: AuditOptions): Promise<AuditResult> {
       p.endsWith('.yml') ||
       p.endsWith('.mjs') ||
       p.endsWith('.js') ||
-      p.endsWith('.ts'),
+      p.endsWith('.ts') ||
+      p.endsWith('.jsx') ||
+      p.endsWith('.tsx') ||
+      p.endsWith('.vue') ||
+      p.endsWith('.svelte') ||
+      p.endsWith('.cjs'),
   })) {
     let body: string;
     try { body = readFileSync(file, 'utf8'); } catch { continue; }
+    scanned++;
     const lines = body.split('\n');
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
@@ -67,12 +75,26 @@ export async function auditDefaults(opts: AuditOptions): Promise<AuditResult> {
     }
   }
 
+  if (scanned === 0) {
+    return {
+      id: 'defaults',
+      title: 'Privacy-positive defaults',
+      standards: [7],
+      severity: 'pass',
+      findings: [],
+      applicable: false,
+      scanned: 0,
+      summary: 'No code/config files found; nothing to audit.',
+    };
+  }
+
   return {
     id: 'defaults',
     title: 'Privacy-positive defaults',
     standards: [7],
     severity: findings.length === 0 ? 'pass' : 'warn',
     findings,
+    scanned,
     summary:
       findings.length === 0
         ? 'No suspicious-key defaults found.'

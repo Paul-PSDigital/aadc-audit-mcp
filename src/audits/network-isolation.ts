@@ -1,6 +1,6 @@
 // AADC Standard 8 (data minimisation).
 //
-// Some code paths must never network — a kids' app capturing microphone
+// Some code paths must never network: a kids' app capturing microphone
 // audio must not upload it, an on-device scoring engine must not phone
 // home. This audit fails if any file inside a declared protected path
 // imports a network-bearing API.
@@ -63,19 +63,23 @@ export async function auditNetworkIsolation(opts: AuditOptions): Promise<AuditRe
       id: 'network-isolation',
       title: 'Network isolation in must-not-network paths',
       standards: [8],
-      severity: 'warn',
+      severity: 'pass',
       findings: [],
+      applicable: false,
+      scanned: 0,
       summary:
-        'SKIPPED — set opts.options.protectedPaths (or AADC_PROTECTED_PATHS env) to enable. ' +
-        'Without protected paths declared this audit is a no-op.',
+        'No protected paths declared; nothing to audit. ' +
+        'Set opts.options.protectedPaths (or AADC_PROTECTED_PATHS env) to a comma-separated list to enable this audit.',
     };
   }
 
+  let scanned = 0;
   const forbidden = DEFAULT_FORBIDDEN;
   for (const target of protectedPaths) {
     for (const file of readableFiles(target)) {
       let body: string;
       try { body = readFileSync(file, 'utf8'); } catch { continue; }
+      scanned++;
       const lines = body.split('\n');
       for (let i = 0; i < lines.length; i++) {
         for (const rx of forbidden) {
@@ -92,12 +96,33 @@ export async function auditNetworkIsolation(opts: AuditOptions): Promise<AuditRe
     }
   }
 
+  // Declared protected path(s) that resolve to ZERO readable files (a
+  // typo, or a moved/renamed module) would otherwise return a green
+  // "confirmed network-free" pass, silently disabling the check. Warn
+  // instead so the user is not falsely reassured.
+  if (scanned === 0) {
+    return {
+      id: 'network-isolation',
+      title: 'Network isolation in must-not-network paths',
+      standards: [8],
+      severity: 'warn',
+      findings: [],
+      scanned: 0,
+      summary:
+        `Declared protected path(s) not found on disk (0 readable files): ${protectedPaths
+          .map((p) => relative(opts.projectRoot, p) || p)
+          .join(', ')}. ` +
+        'Check the path spelling in opts.options.protectedPaths / AADC_PROTECTED_PATHS; the network-isolation check could not run.',
+    };
+  }
+
   return {
     id: 'network-isolation',
     title: 'Network isolation in must-not-network paths',
     standards: [8],
     severity: findings.length === 0 ? 'pass' : 'fail',
     findings,
+    scanned,
     summary:
       findings.length === 0
         ? `${protectedPaths.length} protected path(s) confirmed network-free.`

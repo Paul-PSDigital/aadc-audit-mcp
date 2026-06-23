@@ -1,8 +1,8 @@
 # Wiring this skill into your project
 
-The audit scripts are language-agnostic but the *allowlists* are
+The audits are language-agnostic but the *allowlists* are
 project-specific. Below is a worked example of the env-var overrides
-a typical UK clinical kids' audio app would set in CI.
+a typical UK kids' audio app would set in CI.
 
 ## Typical Flutter audio app
 
@@ -59,8 +59,8 @@ env:
    immediately justify in safeguarding terms should not be on the
    list.
 2. **No analytics, no ads, no behavioural tracking SDKs ever.** The
-   hard-block list in `audit-sdks.sh` catches the common ones; the
-   allowlist is the second layer for everything else.
+   hard-block list in `src/audits/sdks.ts` (the `sdks` audit) catches the
+   common ones; the allowlist is the second layer for everything else.
 3. **Document each addition.** When you add a new package to the
    allowlist, add a one-line note in your project's conformance
    statement saying why it's safe for children.

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>We use the mic so you can sing along.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>The application necessitates continuous determination of the precise geographical coordinates of the device in order to facilitate the provision of an extensively personalised, contextually optimised experiential framework predicated upon the comprehensive analysis of environmental positioning metadata accumulated throughout usage.</string>
+</dict>
+</plist>

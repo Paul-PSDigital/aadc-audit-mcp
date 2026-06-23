@@ -3,7 +3,7 @@
 // Walks declared outbound-link URLs in the project (regex sweep
 // across source files for http/https URLs hosted on known trusted
 // outbound destinations) and probes each one with a HEAD / GET. Any
-// non-2xx/3xx → finding.
+// non-2xx/3xx -> finding.
 //
 // This audit is OPT-IN because it depends on network access. Enable
 // by setting opts.options.checkLinks="true" or passing
@@ -15,17 +15,14 @@ import { relative } from 'node:path';
 import type { AuditFinding, AuditOptions, AuditResult } from './types.js';
 import { walk } from './walk.js';
 
-// Hosts we expect a UK kids app to link out to. Anything else gets
-// reported as "untrusted host" (a different concern, but adjacent —
-// the worker URL guard catches this primarily; this audit's the
-// belt-and-braces external probe).
-const TRUSTED_HOST_SUFFIXES = [
-  'nhs.uk', 'ndcs.org.uk', 'hearglueear.app', 'hearglueear.co.uk',
+// Host suffixes whose links this audit will probe. Anything else is
+// skipped (only declared, trusted outbound destinations are checked).
+// The default covers common app-store / video / forms platforms plus
+// the ICO. Supply your own list (your app domains, partner sites, kit
+// vendors, etc) via opts.allowlists.trustedHosts to override it.
+const DEFAULT_TRUSTED_HOST_SUFFIXES = [
   'apps.apple.com', 'play.google.com', 'forms.gle', 'docs.google.com',
   'youtube.com', 'youtu.be', 'vimeo.com', 'ico.org.uk',
-  // Project-specific: kit vendors. Override per-project if your trust
-  // list differs.
-  'thepihut.com', 'raspberrypi.com',
 ];
 
 const REQUEST_HEADERS = {
@@ -35,9 +32,9 @@ const REQUEST_HEADERS = {
   'Accept-Language': 'en-GB,en;q=0.9',
 };
 
-function hostAllowed(host: string): boolean {
+function hostAllowed(host: string, suffixes: string[]): boolean {
   const h = host.toLowerCase();
-  return TRUSTED_HOST_SUFFIXES.some((s) => h === s || h.endsWith(`.${s}`));
+  return suffixes.some((s) => h === s || h.endsWith(`.${s}`));
 }
 
 async function probe(url: string): Promise<{ ok: boolean; status: number; error?: string }> {
@@ -76,17 +73,22 @@ export async function auditLinkReachability(opts: AuditOptions): Promise<AuditRe
       id: 'link-reachability',
       title: 'External link reachability',
       standards: [4, 6],
-      severity: 'warn',
+      severity: 'pass',
       findings: [],
+      applicable: false,
+      scanned: 0,
       summary:
-        'SKIPPED — set opts.options.checkLinks="true" or AADC_CHECK_LINKS=1 to enable. ' +
-        'Audit makes outbound HTTP requests, so it is opt-in.',
+        'Link reachability not enabled; nothing to audit. ' +
+        'Set opts.options.checkLinks="true" or AADC_CHECK_LINKS=1 to enable (this audit makes outbound HTTP requests, so it is opt-in).',
     };
   }
 
+  const trustedHosts =
+    opts.allowlists?.trustedHosts ?? DEFAULT_TRUSTED_HOST_SUFFIXES;
+
   // Collect candidate URLs from likely-content files only (don't probe
   // every URL in node_modules transitively).
-  const candidates = new Map<string, string>(); // url → first-seen location
+  const candidates = new Map<string, string>(); // url -> first-seen location
   for (const file of walk(opts.projectRoot, {
     filter: (p) =>
       (p.endsWith('.md') ||
@@ -96,7 +98,14 @@ export async function auditLinkReachability(opts: AuditOptions): Promise<AuditRe
         p.endsWith('.mjs') ||
         p.endsWith('.js') ||
         p.endsWith('.ts') ||
-        p.endsWith('.dart')) &&
+        p.endsWith('.dart') ||
+        p.endsWith('.html') ||
+        p.endsWith('.htm') ||
+        p.endsWith('.jsx') ||
+        p.endsWith('.tsx') ||
+        p.endsWith('.vue') ||
+        p.endsWith('.svelte') ||
+        p.endsWith('.cjs')) &&
       !p.includes('/node_modules/') &&
       !p.includes('/dist/') &&
       !p.includes('/build/') &&
@@ -114,7 +123,7 @@ export async function auditLinkReachability(opts: AuditOptions): Promise<AuditRe
         const url = raw.replace(/[.,;:!?'"`)\]]+$/, '');
         try {
           const host = new URL(url).hostname.toLowerCase();
-          if (!hostAllowed(host)) continue;
+          if (!hostAllowed(host, trustedHosts)) continue;
         } catch {
           continue;
         }
@@ -139,8 +148,8 @@ export async function auditLinkReachability(opts: AuditOptions): Promise<AuditRe
     }
     findings.push({
       where,
-      message: `Outbound URL unreachable: ${url} → ${res.error ?? `HTTP ${res.status}`}. ` +
-        `Standard 4 / 6: parents can't rely on links you publish. Refresh in CMS or unpublish.`,
+      message: `Outbound URL unreachable: ${url} -> ${res.error ?? `HTTP ${res.status}`}. ` +
+        `Standard 4 / 6: parents can't rely on links you publish. Refresh the link or unpublish it.`,
       standards: [4, 6],
     });
   }
@@ -148,7 +157,7 @@ export async function auditLinkReachability(opts: AuditOptions): Promise<AuditRe
   const summary =
     findings.length === 0
       ? `Probed ${candidates.size} outbound URL(s); all reachable (${transient} transient 429/5xx ignored).`
-      : `${findings.length} of ${candidates.size} probed URL(s) unreachable (${transient} transient 429/5xx ignored). Refresh in CMS or unpublish.`;
+      : `${findings.length} of ${candidates.size} probed URL(s) unreachable (${transient} transient 429/5xx ignored). Refresh or unpublish the affected link(s).`;
 
   return {
     id: 'link-reachability',
@@ -156,6 +165,7 @@ export async function auditLinkReachability(opts: AuditOptions): Promise<AuditRe
     standards: [4, 6],
     severity: findings.length === 0 ? 'pass' : 'fail',
     findings,
+    scanned: candidates.size,
     summary,
   };
 }

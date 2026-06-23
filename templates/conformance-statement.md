@@ -26,7 +26,7 @@ compliance posture.}}
 
 ### 1. Best interests of the child
 
-{{Explain why the product itself prioritises children's welfare —
+{{Explain why the product itself prioritises children's welfare:
 not the data-processing decisions but the SCOPE decisions. What
 isn't being built that could have been, because it would have
 been bad for children.}}
@@ -80,8 +80,8 @@ policy URL.}}
 ### 10. Geolocation
 
 {{Confirm OFF by default. Confirm no platform-permission entry
-declares location. If location IS used (e.g. for clinical or
-educational reasons), explain the on-screen indicator.}}
+declares location. If location IS used (e.g. for an educational or
+accessibility reason), explain the on-screen indicator.}}
 
 ### 11. Parental controls
 
@@ -119,4 +119,4 @@ reset options. Reachability claims (≤N taps).}}
 This statement is re-read every year. Sign + date below to confirm
 review.
 
-- {{TODAY}} — Initial statement issued ({{REVIEWER_NAME}}).
+- {{TODAY}}: Initial statement issued ({{REVIEWER_NAME}}).

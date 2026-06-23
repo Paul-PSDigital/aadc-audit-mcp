@@ -2,7 +2,7 @@
 
 This document explains where `aadc-audit-mcp` is today, where it
 isn't, and how it's going to get to "actually useful." Honesty about
-the gap is intentional — a compliance tool that hides its blind spots
+the gap is intentional: a compliance tool that hides its blind spots
 isn't a compliance tool.
 
 ## Where we are (v0.1)
@@ -19,13 +19,13 @@ Five regex-based audits over a small fixed set of file shapes:
 
 **Honest assessment**: this is a useful entry point and a *bad* compliance
 checker on its own. It will catch the most obvious explicit footguns
-in a Flutter clinical-kids app. It will silently let through anything
+in a Flutter kids app. It will silently let through anything
 the audit author didn't anticipate. The Safari-leak we documented in
 `CHANGELOG.md` v0.1 → v0.2 is exactly this failure mode.
 
 ## The bar we're aiming at
 
-A regulator, audiologist, or NDCS clinical-network reviewer reading
+A regulator, a domain expert, or an independent reviewer reading
 `AUDIT.md` should be able to say "I trust this." That requires:
 
 1. **Adversarial fixtures.** A `tests/fixtures/` tree of deliberately-
@@ -37,7 +37,7 @@ A regulator, audiologist, or NDCS clinical-network reviewer reading
    shifts (we get a new safe-link pattern, a new platform vector),
    the docs make the obsolescence visible.
 3. **Semantic checks via LLM tool calls.** Some standards are
-   regex-impossible — Standard 13 (nudge techniques), Standard 4
+   regex-impossible: Standard 13 (nudge techniques), Standard 4
    (reading-grade of privacy text), Standard 1 (best-interests UX
    judgement). For those the MCP needs to *use* an LLM through MCP
    itself, not pretend regex can substitute.
@@ -53,7 +53,7 @@ A regulator, audiologist, or NDCS clinical-network reviewer reading
 
 ## Milestones
 
-### v0.2 — "honest" (next)
+### v0.2: "honest" (next)
 
 - ✅ Fix the inverted launchUrl threat model (done).
 - 🚧 Adversarial fixtures: at minimum one per current audit. CI fails
@@ -64,7 +64,7 @@ A regulator, audiologist, or NDCS clinical-network reviewer reading
 - 🚧 GitHub Actions: `aadc-self-test` runs every fixture through the
   CLI on every push.
 
-### v0.3 — "broader"
+### v0.3: "broader"
 
 - 🚧 Multi-stack: at least one fixture + audit pass for React Native and
   one for plain-web React. (Not started; fixtures still outstanding.)
@@ -89,7 +89,7 @@ A regulator, audiologist, or NDCS clinical-network reviewer reading
   check, fills in the project's `docs/regulations/aadc/AUDIT.md`
   using `templates/AUDIT.md` as the skeleton. (Not built.)
 
-### v0.4 — "semantic"
+### v0.4: "semantic"
 
 - Standard 13 nudge-pattern detector (LLM-driven; scans for streaks,
   daily-quest pressure, infinite scroll, social proof patterns).
@@ -98,7 +98,7 @@ A regulator, audiologist, or NDCS clinical-network reviewer reading
 - Standard 1 best-interests narrative check (LLM compares the
   conformance statement to the actual code surfaces).
 
-### v1.0 — "trusted"
+### v1.0: "trusted"
 
 - Every AADC standard has at least one machine check OR a clear
   reason why it's purely judgement-based.

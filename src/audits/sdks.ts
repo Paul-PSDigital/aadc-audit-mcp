@@ -58,7 +58,7 @@ function isHardBlocked(name: string): string | null {
   return null;
 }
 
-function extractFlutterDeps(yaml: string): string[] {
+export function extractFlutterDeps(yaml: string): string[] {
   const out: string[] = [];
   let inDeps = false;
   for (const raw of yaml.split('\n')) {
@@ -68,13 +68,16 @@ function extractFlutterDeps(yaml: string): string[] {
       continue;
     }
     if (!inDeps) continue;
-    const m = raw.match(/^  ([a-z_][a-z0-9_]*):\s/);
+    // Colon may be end-of-line (expanded form: bare "mixpanel_flutter:"
+    // with hosted:/version: on following deeper-indented lines). The
+    // 2-space anchor still excludes the 4-space-indented sub-keys.
+    const m = raw.match(/^  ([a-z_][a-z0-9_]*):/);
     if (m) out.push(m[1]);
   }
   return out;
 }
 
-function extractNpmDeps(json: string): string[] {
+export function extractNpmDeps(json: string): string[] {
   let parsed: any;
   try {
     parsed = JSON.parse(json);
@@ -88,7 +91,7 @@ function extractNpmDeps(json: string): string[] {
   return [...out];
 }
 
-function extractPythonDeps(text: string): string[] {
+export function extractPythonDeps(text: string): string[] {
   const out: string[] = [];
   for (const raw of text.split('\n')) {
     const line = raw.trim();
@@ -104,6 +107,7 @@ export async function auditSdks(opts: AuditOptions): Promise<AuditResult> {
   const npmAllow = new Set(opts.allowlists?.npm ?? DEFAULT_NPM_BASE);
   const pythonAllow = new Set(opts.allowlists?.python ?? DEFAULT_PYTHON_BASE);
   const findings: AuditFinding[] = [];
+  let scanned = 0;
 
   const check = (
     name: string,
@@ -135,6 +139,7 @@ export async function auditSdks(opts: AuditOptions): Promise<AuditResult> {
   })) {
     let body: string;
     try { body = readFileSync(f, 'utf8'); } catch { continue; }
+    scanned++;
     for (const dep of extractFlutterDeps(body)) {
       check(dep, f, 'Flutter', flutterAllow);
     }
@@ -146,6 +151,7 @@ export async function auditSdks(opts: AuditOptions): Promise<AuditResult> {
   })) {
     let body: string;
     try { body = readFileSync(f, 'utf8'); } catch { continue; }
+    scanned++;
     for (const dep of extractNpmDeps(body)) {
       check(dep, f, 'Node', npmAllow);
     }
@@ -157,9 +163,23 @@ export async function auditSdks(opts: AuditOptions): Promise<AuditResult> {
   })) {
     let body: string;
     try { body = readFileSync(f, 'utf8'); } catch { continue; }
+    scanned++;
     for (const dep of extractPythonDeps(body)) {
       check(dep, f, 'Python', pythonAllow);
     }
+  }
+
+  if (scanned === 0) {
+    return {
+      id: 'sdks',
+      title: 'Third-party SDK allowlist',
+      standards: [5, 9, 12, 13],
+      severity: 'pass',
+      findings: [],
+      applicable: false,
+      scanned: 0,
+      summary: 'No dependency manifests (pubspec.yaml / package.json / requirements*.txt) found; nothing to audit.',
+    };
   }
 
   return {
@@ -168,6 +188,7 @@ export async function auditSdks(opts: AuditOptions): Promise<AuditResult> {
     standards: [5, 9, 12, 13],
     severity: findings.length === 0 ? 'pass' : 'fail',
     findings,
+    scanned,
     summary:
       findings.length === 0
         ? 'No analytics, advertising, or tracking SDKs present, and every dependency is on the allowlist.'

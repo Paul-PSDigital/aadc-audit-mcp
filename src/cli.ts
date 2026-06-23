@@ -1,21 +1,22 @@
 #!/usr/bin/env node
 // Dual-mode entrypoint.
 //
-//   aadc                       → start MCP server on stdio (default, when
+//   aadc                       -> start MCP server on stdio (default, when
 //                                  invoked by Claude Code via mcpServers
 //                                  config).
-//   aadc audit [project-root]  → run every audit, print report, exit 0/1.
-//   aadc audit:<id> [root]     → run one audit (permissions, sdks,
+//   aadc audit [project-root]  -> run every audit, print report, exit 0/1.
+//   aadc audit:<id> [root]     -> run one audit (permissions, sdks,
 //                                  launchurl, network-isolation, defaults,
 //                                  reading-grade, placeholders,
 //                                  link-reachability, volume-cap,
 //                                  sentry-hygiene, hardcoded-url,
 //                                  policy-mentions-sdks).
-//   aadc standards             → list the 15 AADC standards.
-//   aadc help                  → this message.
+//   aadc standards             -> list the 15 AADC standards.
+//   aadc help                  -> this message.
 
 import { resolve } from 'node:path';
 import process from 'node:process';
+import { pathToFileURL } from 'node:url';
 
 import { AUDITS, runAll } from './audits/index.js';
 import type { AuditOptions, AuditResult } from './audits/index.js';
@@ -33,6 +34,8 @@ function envAllowlists(): AuditOptions['allowlists'] {
     python: split(process.env.AADC_SDK_ALLOWLIST_PYTHON) ?? [],
     protectedPaths: split(process.env.AADC_PROTECTED_PATHS) ?? [],
     parentAreaPaths: split(process.env.AADC_PARENT_AREA_PATHS) ?? [],
+    trustedHosts: split(process.env.AADC_TRUSTED_HOSTS) ?? [],
+    firstPartyOrigins: split(process.env.AADC_FIRST_PARTY_ORIGINS) ?? [],
   };
 }
 
@@ -47,17 +50,32 @@ function effectiveAllowlists(): AuditOptions['allowlists'] {
   return Object.keys(out).length > 0 ? out : undefined;
 }
 
-function formatReport(results: AuditResult[]): string {
+export function formatReport(results: AuditResult[]): string {
   const lines: string[] = [];
   lines.push('# AADC audit');
   lines.push('');
   for (const r of results) {
-    const mark = r.severity === 'pass' ? 'PASS' : r.severity === 'warn' ? 'WARN' : 'FAIL';
-    lines.push(`## ${r.title} — ${mark}`);
+    const naFlag = r.applicable === false;
+    const mark = naFlag
+      ? 'N/A'
+      : r.severity === 'pass'
+        ? 'PASS'
+        : r.severity === 'warn'
+          ? 'WARN'
+          : 'FAIL';
+    const scannedSuffix = typeof r.scanned === 'number' ? ` (scanned ${r.scanned})` : '';
+    if (naFlag) {
+      // Distinct N/A heading so a not-applicable audit never reads as a
+      // green pass.
+      lines.push(`## ${r.title} - [N/A]${scannedSuffix}`);
+    } else {
+      lines.push(`## ${r.title} - ${mark}${scannedSuffix}`);
+    }
     lines.push(`AADC Standard(s): ${r.standards.join(', ')}`);
     lines.push('');
     if (r.findings.length === 0) {
-      lines.push(`✓ ${r.summary}`);
+      // Neutral marker for N/A; the green check only for a real pass.
+      lines.push(naFlag ? `- ${r.summary}` : `✓ ${r.summary}`);
     } else {
       for (const f of r.findings) {
         lines.push(`  - ${f.where}: ${f.message}`);
@@ -69,6 +87,17 @@ function formatReport(results: AuditResult[]): string {
     lines.push('---');
     lines.push('');
   }
+
+  // Tally. Classification keys off applicable===false FIRST so a
+  // not-applicable audit is never counted as passed or as a warning. The
+  // four counts always sum to results.length.
+  const passed = results.filter((r) => r.severity === 'pass' && r.applicable !== false).length;
+  const warnings = results.filter((r) => r.severity === 'warn' && r.applicable !== false).length;
+  const failed = results.filter((r) => r.severity === 'fail' && r.applicable !== false).length;
+  const notApplicable = results.filter((r) => r.applicable === false).length;
+  lines.push(`${passed} passed, ${warnings} warnings, ${failed} failed, ${notApplicable} not applicable`);
+  lines.push('');
+
   return lines.join('\n');
 }
 
@@ -89,12 +118,12 @@ async function cmdAudit(id: string | undefined, root: string): Promise<number> {
     results = [await fn(opts)];
   }
   process.stdout.write(formatReport(results));
-  return results.some((r) => r.severity === 'fail') ? 1 : 0;
+  return results.some((r) => r.severity === 'fail' && r.applicable !== false) ? 1 : 0;
 }
 
 function cmdHelp(): void {
   process.stdout.write(
-    `aadc-audit-mcp — local AADC compliance audit (stdio MCP server + CLI)
+    `aadc-audit-mcp: local AADC compliance audit (stdio MCP server + CLI)
 
 Usage:
   aadc                       Start MCP server on stdio (default).
@@ -122,6 +151,9 @@ Env overrides (per-language allowlists, space- or comma-separated):
   AADC_SDK_ALLOWLIST_PYTHON
   AADC_PROTECTED_PATHS
   AADC_PARENT_AREA_PATHS
+  AADC_TRUSTED_HOSTS         (link-reachability: host suffixes to probe)
+  AADC_FIRST_PARTY_ORIGINS   (launchurl: origins treated as first-party)
+  AADC_CHECK_LINKS=1         (link-reachability: enable outbound HTTP probes)
 
 This tool runs entirely on your machine. Your source code never
 leaves the device.
@@ -168,7 +200,12 @@ async function main(): Promise<void> {
   process.exit(2);
 }
 
-main().catch((err) => {
-  process.stderr.write(`${err?.stack ?? err}\n`);
-  process.exit(2);
-});
+// Only run when invoked as the program entrypoint. Importing this module
+// (e.g. from tests to reach formatReport) must not start the server or
+// parse argv.
+if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
+  main().catch((err) => {
+    process.stderr.write(`${err?.stack ?? err}\n`);
+    process.exit(2);
+  });
+}
