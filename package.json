@@ -1,6 +1,6 @@
 {
   "name": "aadc-audit-mcp",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Local stdio MCP server (and CLI) that audits a software project against the UK ICO Age Appropriate Design Code (the Children's Code). Runs entirely on the user's machine; no source code leaves the device.",
   "keywords": [
     "aadc",

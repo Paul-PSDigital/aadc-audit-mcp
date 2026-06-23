@@ -106,7 +106,7 @@ function asTextContent(text: string) {
 
 export async function startMcpServer(): Promise<void> {
   const server = new Server(
-    { name: 'aadc-audit', version: '0.3.0' },
+    { name: 'aadc-audit', version: '0.3.1' },
     { capabilities: { tools: {} } },
   );
 
