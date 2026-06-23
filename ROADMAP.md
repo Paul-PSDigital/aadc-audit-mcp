@@ -56,18 +56,20 @@ A regulator, a domain expert, or an independent reviewer reading
 ### v0.2: "honest" (next)
 
 - ✅ Fix the inverted launchUrl threat model (done).
-- 🚧 Adversarial fixtures: at minimum one per current audit. CI fails
-  if any audit misses its paired fixture.
+- ✅ Adversarial fixtures: at least one per audit, under
+  `tests/fixtures/`, exercised by `npm test` (delivered in 0.3.1).
 - 🚧 `THREAT-MODELS.md`: per-check threat-model documentation.
-- 🚧 `CHANGELOG.md` with the v0.1 → v0.2 Safari-leak story written
+- ✅ `CHANGELOG.md` with the v0.1 to v0.2 Safari-leak story written
   up honestly. This is the credibility-building artefact.
-- 🚧 GitHub Actions: `aadc-self-test` runs every fixture through the
-  CLI on every push.
+- ✅ GitHub Actions: CI runs the build and the full fixture suite on
+  every push and pull request (Node 18, 20, 22), delivered in 0.3.1.
 
 ### v0.3: "broader"
 
-- 🚧 Multi-stack: at least one fixture + audit pass for React Native and
-  one for plain-web React. (Not started; fixtures still outstanding.)
+- 🚧 Multi-stack: plain web/JS is now covered (0.3.1 added web-aware
+  `hardcoded-url`, `volume-cap`, and `launchurl` plus npm/Python SDK
+  detection in `policy-mentions-sdks`, with web fixtures). React Native
+  and Swift/Kotlin-native passes are still outstanding.
 - 🚧 Standard 11 broken into 3-4 sub-audits (gate existence, difficulty,
   route protection, deep-link protection). (Not yet; `reading-grade`
   also touches Standard 11 but the parental-controls sub-audits are
@@ -83,8 +85,8 @@ A regulator, a domain expert, or an independent reviewer reading
 - ✅ Further audits added and exposed as individual MCP tools and CLI
   subcommands: `volume-cap` (Standards 1, 14), `sentry-hygiene`
   (Standards 7, 9), and `policy-mentions-sdks` (warn-only, Standards
-  4, 9). Note: none of the v0.3 audits have paired fixtures yet, so
-  the v0.2 fixture/CI-self-test items above still apply to them.
+  4, 9). Note: as of 0.3.1 every audit (including these) has at least
+  one paired fixture run in CI, closing the v0.2 fixture item above.
 - 🚧 `aadc.write_audit` MCP tool: invoked by Claude after running every
   check, fills in the project's `docs/regulations/aadc/AUDIT.md`
   using `templates/AUDIT.md` as the skeleton. (Not built.)

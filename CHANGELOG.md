@@ -10,6 +10,72 @@ the project follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-06-23
+
+### Added
+
+- **Web / JS coverage.** `hardcoded-url`, `volume-cap`, and `launchurl`
+  now scan web source (`.js`, `.mjs`, `.cjs`, `.jsx`, `.ts`, `.tsx`,
+  `.html`, `.htm`, `.vue`, `.svelte`) in addition to Dart, via a shared
+  comment-aware `web-source` module. A vanilla HTML/JS PWA now gets real
+  signal: hardcoded outbound URLs, HTML5 `<audio>` / `<video>` or
+  `new Audio()` without an explicit volume clamp, and `window.open` /
+  `location` / `<a target="_blank">` escapes out of the in-app sandbox.
+- **npm and Python service-SDK disclosure.** `policy-mentions-sdks` now
+  recognises npm and Python external-service SDKs (Sentry, Firebase /
+  Google Analytics, PostHog, Mixpanel, Amplitude, Segment, Datadog,
+  Hotjar, Stripe, Intercom, and others), not just Flutter packages.
+- **`AADC_FIRST_PARTY_ORIGINS`** (env) / `allowlists.firstPartyOrigins`
+  (MCP): declare your own site host(s) so a `launchurl` `target="_blank"`
+  or `window.open` to your own pages is not flagged.
+- **An adversarial fixture suite and a test runner.** `npm test`
+  compiles via `tsconfig.test.json` and runs `node:test` against
+  per-audit fixtures under `tests/` (no new dependencies): 60 tests.
+- **CI.** `.github/workflows/ci.yml` runs build and test on Node 18, 20,
+  and 22 on every push and pull request.
+
+### Changed
+
+- **Not-applicable reporting.** `AuditResult` gains optional `applicable`
+  and `scanned` fields. An audit with zero relevant inputs (a Dart/web
+  check on a project with none of those files, or a config-gated audit
+  you have not enabled) now reports `[N/A]` instead of a green `PASS`,
+  and the CLI prints a `N passed, N warnings, N failed, N not applicable`
+  tally. N/A never affects the exit code or the MCP `isError` flag.
+  "Not applicable" no longer masquerades as "compliant".
+- **Layout-agnostic discovery.** `reading-grade` and
+  `policy-mentions-sdks` walk the whole tree for `Info.plist` /
+  `pubspec.yaml` / `package.json` / `requirements.txt` instead of a
+  hardcoded `apps/mobile/` path, so any project layout works.
+- **De-tuned for general use.** Removed identifiers and vocabulary
+  specific to one reference app (private domains, filenames, the
+  `uiStrings` CMS convention) and clinical/medical flavour from the
+  code, docs, and templates.
+
+### Fixed
+
+- An adversarial review pass found and fixed five correctness bugs, each
+  now locked by a regression test: an npm `@sentry/*` app could never
+  pass (the init check was Dart-only); the `TODO` placeholder scan was
+  case-insensitive and flagged the ordinary word "todo"; expanded-form
+  `pubspec.yaml` dependencies bypassed the analytics hard-block; the
+  comment stripper mishandled JS regex literals (dropping a real URL or
+  leaking a commented one); and protocol-relative `//host` navigations
+  slipped past `launchurl`.
+
+### Why this matters (the honesty entry)
+
+The 0.3.0 entry admitted its seven audits shipped without paired
+fixtures, which by this project's own maintenance principle made them
+unprovable. 0.3.1 closes that gap: every audit now has at least one
+adversarial fixture, CI runs them on every push, and the audits were put
+through a deliberate false-positive hunt before release (which itself
+surfaced the five bugs fixed above). The coverage is still heuristic and
+still does not touch the semantic standards (1, 12, 13), which remain
+`ROADMAP.md` work. But "all clean" now means "the checks that applied
+found nothing", with everything else shown as N/A rather than a
+misleading green.
+
 ## [0.3.0] - 2026-06-22
 
 ### Added
@@ -56,7 +122,7 @@ failure mode the v0.1 to v0.2 Safari-leak story documents. Fixtures
 for every audit (including these seven) remain a `ROADMAP.md` item,
 not something shipped in 0.3.0.
 
-## [0.2.0] — 2026-05-22
+## [0.2.0] - 2026-05-22
 
 ### Changed
 
@@ -78,9 +144,9 @@ not something shipped in 0.3.0.
 The original v0.1 launchUrl check was written when in-app WebView
 cookie inheritance was the dominant outbound-link threat for kid
 apps. When the reference consumer's codebase added a sandboxed
-WebView for kid-facing links — flipping the threat model so that
+WebView for kid-facing links (flipping the threat model so that
 `LaunchMode.externalApplication` itself became the unsafe option in
-kid-facing surfaces — the audit didn't flip with it.
+kid-facing surfaces) the audit didn't flip with it.
 
 In a manual adversarial test, a deliberately-planted call of
 `launchUrl(Uri.parse('https://www.amazon.co.uk/'),
@@ -110,7 +176,7 @@ yet committed. v0.3 will extend the same pattern to every other audit.
 - `ROADMAP.md` documenting the gap between v0.1 and "trusted",
   with honest milestone descriptions.
 
-## [0.1.0] — 2026-05-22
+## [0.1.0] - 2026-05-22
 
 ### Added
 
