@@ -11,7 +11,8 @@
 //                                  link-reachability, volume-cap,
 //                                  sentry-hygiene, hardcoded-url,
 //                                  policy-mentions-sdks, dpia-present,
-//                                  age-assurance, data-rights-tools).
+//                                  age-assurance, data-rights-tools,
+//                                  parent-gate, parent-gate-routes).
 //   aadc standards             -> list the 15 AADC standards.
 //   aadc help                  -> this message.
 
@@ -163,6 +164,8 @@ Usage:
   aadc audit:dpia-present [root]
   aadc audit:age-assurance [root]
   aadc audit:data-rights-tools [root]
+  aadc audit:parent-gate [root]
+  aadc audit:parent-gate-routes [root]
   aadc standards             List the 15 AADC standards.
   aadc help                  This message.
 
@@ -173,7 +176,7 @@ Env overrides (per-language allowlists, space- or comma-separated):
   AADC_SDK_ALLOWLIST_NPM
   AADC_SDK_ALLOWLIST_PYTHON
   AADC_PROTECTED_PATHS
-  AADC_PARENT_AREA_PATHS
+  AADC_PARENT_AREA_PATHS     (launchurl, parent-gate, parent-gate-routes: parent-only surfaces)
   AADC_TRUSTED_HOSTS         (link-reachability: host suffixes to probe)
   AADC_FIRST_PARTY_ORIGINS   (launchurl: origins treated as first-party)
   AADC_CHECK_LINKS=1         (link-reachability: enable outbound HTTP probes)

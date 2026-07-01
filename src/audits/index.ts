@@ -17,6 +17,8 @@ import { auditPolicyMentionsSdks } from './policy-mentions-sdks.js';
 import { auditDpiaPresent } from './dpia-present.js';
 import { auditAgeAssurance } from './age-assurance.js';
 import { auditDataRightsTools } from './data-rights-tools.js';
+import { auditParentGate } from './parent-gate.js';
+import { auditParentGateRoutes } from './parent-gate-routes.js';
 
 export type AuditFn = (opts: AuditOptions) => Promise<AuditResult>;
 
@@ -36,6 +38,8 @@ export const AUDITS: Record<string, AuditFn> = {
   'dpia-present': auditDpiaPresent,
   'age-assurance': auditAgeAssurance,
   'data-rights-tools': auditDataRightsTools,
+  'parent-gate': auditParentGate,
+  'parent-gate-routes': auditParentGateRoutes,
 };
 
 export async function runAll(opts: AuditOptions): Promise<AuditResult[]> {

@@ -68,6 +68,10 @@ const AUDIT_DESCRIPTIONS: Record<string, string> = {
     'Heuristic warn-only check for an age-assurance / age-gate mechanism in code, or a declared apply-to-all-users stance (AADC_AGE_STRATEGY=all-users). Standard 3. Cannot judge whether age assurance is sufficiently certain.',
   'data-rights-tools':
     'Warn-only scan for tools that let children exercise data rights and report concerns: account/data deletion, data export/access, and a report/complaint route. Standard 15.',
+  'parent-gate':
+    "Structural check for Standard 11 parental controls: given declared parent-area paths (AADC_PARENT_AREA_PATHS), verify a parent-gate mechanism exists and is not a trivially-bypassable single-tap yes/no. Warn-only heuristic; gate persistence across sessions is out of structural reach.",
+  'parent-gate-routes':
+    "Structural check for Standard 11: verify each declared parent-area source file references a gate or route-guard, so parent-only surfaces are not reachable directly via deep link without passing the gate. Warn-only heuristic.",
 };
 
 // Map an audit id (kebab-case) to its MCP tool name, and back. The
@@ -124,7 +128,7 @@ function asTextContent(text: string) {
 
 export async function startMcpServer(): Promise<void> {
   const server = new Server(
-    { name: 'aadc-audit', version: '0.3.2' },
+    { name: 'aadc-audit', version: '0.3.3' },
     { capabilities: { tools: {} } },
   );
 

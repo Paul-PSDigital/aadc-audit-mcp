@@ -10,7 +10,7 @@ leaves the device.
 
 ## What it does
 
-Eighteen MCP tools, all local-only: fifteen individual audits, plus `audit_all`, `list_standards`, and `read_standard`.
+Twenty MCP tools, all local-only: seventeen individual audits, plus `audit_all`, `list_standards`, and `read_standard`.
 
 | MCP tool | What it does |
 |---|---|
@@ -30,6 +30,8 @@ Eighteen MCP tools, all local-only: fifteen individual audits, plus `audit_all`,
 | `aadc.audit_dpia_present` | Warn-only presence/process heuristic: a DPIA document exists in-repo and is not an obvious unfilled stub (too short, placeholder markers, or missing the core section signals). Standard 2. |
 | `aadc.audit_age_assurance` | Warn-only presence/process heuristic: source shows an age-assurance / age-gate mechanism, or you declare a blanket apply-to-all-users stance (`AADC_AGE_STRATEGY=all-users`). Standard 3. |
 | `aadc.audit_data_rights_tools` | Warn-only presence/process heuristic: source shows tools for account/data deletion, data export/access, and reporting a concern. Standard 15. |
+| `aadc.audit_parent_gate` | Warn-only structural heuristic: once you declare your parent-area paths (`AADC_PARENT_AREA_PATHS`), scans source for a parent/age-gate mechanism and applies a conservative difficulty check (a one-tap "I am over 18" affirm with no birth-year / age / arithmetic challenge warns). No parent-area paths declared reports N/A. Standard 11. |
+| `aadc.audit_parent_gate_routes` | Warn-only structural heuristic: once you declare your parent-area paths (`AADC_PARENT_AREA_PATHS`), flags declared parent-area source files that reference no parent gate or route-guard, so they may be reachable directly via a deep link or a direct route. No parent-area paths declared reports N/A. Standard 11. |
 | `aadc.list_standards` | Return the 15 AADC standards with their one-line statutory summaries. |
 | `aadc.read_standard` | Return the full ICO-published text of one standard. |
 
@@ -166,7 +168,7 @@ For **Claude Desktop**, edit
 }
 ```
 
-That's it. Claude will now offer the eighteen `aadc.*` tools whenever
+That's it. Claude will now offer the twenty `aadc.*` tools whenever
 you're working in a project that looks like it might be accessed by
 children.
 
@@ -226,8 +228,12 @@ pages is treated as first-party and is not flagged as an external
 escape.
 
 The path/value overrides apply to **web source as well as Dart**.
-`AADC_PARENT_AREA_PATHS` (env or MCP) marks post-parent-gate surfaces
-that may legitimately open the OS browser, and the MCP-only allowlists
+`AADC_PARENT_AREA_PATHS` (env or MCP) declares your parent-only surfaces
+(the paths behind the parent gate). It marks post-parent-gate surfaces
+that may legitimately open the OS browser (for `launchurl`), and it is
+also what enables both Standard 11 structural audits (`parent-gate` and
+`parent-gate-routes`); with none declared, those two audits report N/A.
+The MCP-only allowlists
 `urlExemptPaths` / `urlExemptValues` (for `hardcoded-url`) and
 `volumeCapExempt` (for `volume-cap`) now match across `.js` / `.ts` /
 `.html` / `.vue` / `.svelte` as well as `.dart`.
@@ -279,13 +285,14 @@ aadc-audit-mcp/
 ├── package.json, tsconfig.json
 ├── src/
 │   ├── cli.ts                 (dual-mode entry: MCP server OR CLI)
-│   ├── server.ts              (MCP server: 18 tools)
+│   ├── server.ts              (MCP server: 20 tools)
 │   ├── standards.ts           (ICO AADC text loader)
-│   └── audits/                (15 audit modules + support files)
+│   └── audits/                (17 audit modules + support files)
 │       ├── index.ts           (registry)
 │       ├── types.ts           (AuditResult, AuditOptions)
 │       ├── walk.ts            (fs traversal)
 │       ├── web-source.ts      (shared web-file discovery + comment stripping)
+│       ├── parent-area.ts     (shared Standard 11 parent-area path resolution)
 │       ├── permissions.ts     (Standards 8, 10)
 │       ├── sdks.ts            (Standards 5, 9, 12, 13)
 │       ├── launchurl.ts       (Standards 11, 14)
@@ -300,7 +307,9 @@ aadc-audit-mcp/
 │       ├── policy-mentions-sdks.ts (Standards 4, 9)
 │       ├── dpia-present.ts    (Standard 2, warn-only presence/process)
 │       ├── age-assurance.ts   (Standard 3, warn-only presence/process)
-│       └── data-rights-tools.ts (Standard 15, warn-only presence/process)
+│       ├── data-rights-tools.ts (Standard 15, warn-only presence/process)
+│       ├── parent-gate.ts     (Standard 11, warn-only structural heuristic)
+│       └── parent-gate-routes.ts (Standard 11, warn-only structural heuristic)
 ├── aadc/                      (canonical ICO text mirror)
 │   ├── 1-best-interests-of-the-child.md
 │   ├── ... (15 standards + executive summary)

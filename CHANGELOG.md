@@ -10,6 +10,45 @@ the project follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-07-01
+
+### Added
+
+- **Two new structural Standard 11 (parental controls) sub-audits**, each
+  registered, exposed as an individual MCP tool, and runnable as a CLI
+  subcommand. Both are **warn-only** and both require you to declare your
+  parent-area paths (`AADC_PARENT_AREA_PATHS` or
+  `allowlists.parentAreaPaths`); with none declared, each reports N/A rather
+  than guessing.
+  - `parent-gate` (`aadc.audit_parent_gate`): checks that a parent/age-gate
+    mechanism exists in source (gate existence) and applies a conservative
+    difficulty heuristic. A gate that shows only a trivial one-tap "I am over
+    18" affirm, with no birth-year / age-entry / arithmetic / free-text
+    challenge anywhere, warns. Standard 11.
+  - `parent-gate-routes` (`aadc.audit_parent_gate_routes`): checks that every
+    declared parent-area source file references a parent gate or a route-guard,
+    so a parent-only surface is not reachable directly via a deep link or a
+    direct route (deep-link / route-guard protection). Standard 11.
+
+  The MCP server now exposes 20 tools total: the 17 individual audits plus
+  `aadc.audit_all`, `aadc.list_standards`, and `aadc.read_standard`.
+
+### Honesty notes
+
+- These are structural heuristics, not proof. `parent-gate` detects a gate's
+  PRESENCE plus a best-effort difficulty signal; it cannot confirm the gate is
+  actually wired up to block navigation. The difficulty check is deliberately
+  tuned to avoid false alarms: it warns only on a clear trivial-affirm signal
+  with no strong challenge, so it can MISS a weak gate rather than over-warn.
+- Gate PERSISTENCE across sessions (whether a passed gate is remembered,
+  re-challenged, or trivially re-passable) is runtime behaviour that is out of
+  structural reach and remains a manual / judgement item, not covered by either
+  audit.
+- For `parent-gate-routes`, a referenced guard token is not proof the guard is
+  wired correctly, and its absence in a given file can be a false positive when
+  the gate is applied centrally by a parent router or layout file. Treat
+  findings as prompts to confirm route protection by hand.
+
 ## [0.3.2] - 2026-06-26
 
 ### Added

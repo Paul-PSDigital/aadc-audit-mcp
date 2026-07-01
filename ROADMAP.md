@@ -77,9 +77,19 @@ A regulator, a domain expert, or an independent reviewer reading
   detection in `policy-mentions-sdks`, with web fixtures). React Native
   and Swift/Kotlin-native passes are still outstanding.
 - 🚧 Standard 11 broken into 3-4 sub-audits (gate existence, difficulty,
-  route protection, deep-link protection). (Not yet; `reading-grade`
-  also touches Standard 11 but the parental-controls sub-audits are
-  not built.)
+  route protection, deep-link protection). Partially delivered in 0.3.3:
+  - ✅ gate existence: `parent-gate` warns when parent-area paths are
+    declared but no gate mechanism is found in source.
+  - ✅ difficulty heuristic: `parent-gate` warns on a trivial one-tap
+    affirm with no strong challenge (conservative, so it can miss a weak
+    gate rather than over-warn).
+  - ✅ route / deep-link protection: `parent-gate-routes` warns when a
+    declared parent-area file references no gate or route-guard, so it may
+    be reachable directly via a deep link or a direct route.
+  - ❌ gate PERSISTENCE across sessions (remembered / re-challenged /
+    trivially re-passable) is runtime behaviour, out of structural reach,
+    and remains a manual / judgement item. Not done.
+  (`reading-grade` also touches Standard 11.)
 - 🚧 Standard 4 reading-grade check. ✅ A `reading-grade` audit now
   ships and is exposed as `aadc.audit_reading_grade`, but it is a
   **heuristic**, not the LLM-driven check this milestone originally
