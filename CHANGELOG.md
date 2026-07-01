@@ -10,6 +10,55 @@ the project follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-06-26
+
+### Added
+
+- **Three new warn-only audits for previously-uncovered standards**, each
+  registered, exposed as an individual MCP tool, and runnable as a CLI
+  subcommand:
+  - `dpia-present` (`aadc.audit_dpia_present`): checks that a DPIA document
+    exists in-repo and is not an obvious unfilled stub (too short, placeholder
+    markers, or missing the core section signals). Standard 2.
+  - `age-assurance` (`aadc.audit_age_assurance`): checks for an age-assurance /
+    age-gate signal in source, or a declared apply-to-all-users stance
+    (`AADC_AGE_STRATEGY=all-users`). Standard 3.
+  - `data-rights-tools` (`aadc.audit_data_rights_tools`): checks source for
+    account/data deletion, data export/access, and a report-a-concern route.
+    Standard 15.
+
+  The MCP server now exposes 18 tools total: the 15 individual audits plus
+  `aadc.audit_all`, `aadc.list_standards`, and `aadc.read_standard`.
+- **A dependency-free self-test harness for the three new audits.**
+  `tests/run.mjs` runs each new audit against a tiny isolated fixture project
+  under `tests/fixtures/` (`dpia-present/`, `age-assurance/`,
+  `data-rights-tools/`) and asserts the expected severity, using only Node
+  built-ins. It is wired into `npm test` (which already runs in CI on Node 18,
+  20, and 22) and is also available on its own as `npm run test:selftest`.
+- **New string-valued options, wired through both entrypoints.** `opts.options`
+  is now plumbed from the CLI (`AADC_DPIA_PATH`, `AADC_AGE_STRATEGY`,
+  `AADC_DATA_RIGHTS_PATHS`, `AADC_PRIVACY_POLICY_PATH`) and from MCP callers
+  (the tool `options` object), so per-audit path/strategy overrides reach the
+  audits over both transports.
+
+### Why this matters (the honesty entry)
+
+Standards 2, 3, and 15 had no automated check before this release. They now
+have one each, but each is a **presence/process heuristic**: it confirms that a
+document or a recognised signal is *present*, not that it is correct,
+sufficient, or prominent. That is why all three are warn-only and never FAIL.
+A missing DPIA file is not proof no DPIA exists (it may live in Confluence or a
+compliance system); a missing age or data-rights signal may be implemented
+server-side or under names the scan does not recognise. These audits cannot
+judge the substance of a DPIA, whether age assurance is certain enough for the
+risks, or whether a data-rights tool actually works.
+
+Fixture coverage is honest about its own edges: `tests/run.mjs` currently
+covers the three new audits only. The 12 older audits remain covered by the
+`node:test` fixture suite added in 0.3.1, which `npm test` still runs first.
+Folding the older audits into the same dependency-free harness (or vice versa)
+is tracked in `ROADMAP.md`; this release does not claim to do it.
+
 ## [0.3.1] - 2026-06-23
 
 ### Added

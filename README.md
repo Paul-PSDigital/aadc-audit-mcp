@@ -10,7 +10,7 @@ leaves the device.
 
 ## What it does
 
-Fifteen MCP tools, all local-only: twelve individual audits, plus `audit_all`, `list_standards`, and `read_standard`.
+Eighteen MCP tools, all local-only: fifteen individual audits, plus `audit_all`, `list_standards`, and `read_standard`.
 
 | MCP tool | What it does |
 |---|---|
@@ -27,8 +27,19 @@ Fifteen MCP tools, all local-only: twelve individual audits, plus `audit_all`, `
 | `aadc.audit_sentry_hygiene` | Check Sentry initialisation hygiene (e.g. no PII capture, sane sampling). Standards 7, 9. |
 | `aadc.audit_hardcoded_url` | Flag hardcoded URLs outside the CMS, in Dart and web source. Standards 4, 6. |
 | `aadc.audit_policy_mentions_sdks` | Warn-only check that the privacy policy names every external-service SDK (Flutter, npm, and Python). Standards 4, 9. |
+| `aadc.audit_dpia_present` | Warn-only presence/process heuristic: a DPIA document exists in-repo and is not an obvious unfilled stub (too short, placeholder markers, or missing the core section signals). Standard 2. |
+| `aadc.audit_age_assurance` | Warn-only presence/process heuristic: source shows an age-assurance / age-gate mechanism, or you declare a blanket apply-to-all-users stance (`AADC_AGE_STRATEGY=all-users`). Standard 3. |
+| `aadc.audit_data_rights_tools` | Warn-only presence/process heuristic: source shows tools for account/data deletion, data export/access, and reporting a concern. Standard 15. |
 | `aadc.list_standards` | Return the 15 AADC standards with their one-line statutory summaries. |
 | `aadc.read_standard` | Return the full ICO-published text of one standard. |
+
+The last three audits (`dpia-present`, `age-assurance`, `data-rights-tools`)
+are **warn-only presence/process heuristics**. They check that a document or a
+recognised signal is *present*, not that it is correct, sufficient, or
+prominent. Absence is a WARN (never a FAIL), because the thing they look for
+may live server-side, in a dependency, or outside the repository. They cannot
+judge the substance of a DPIA, whether age assurance is certain enough for the
+risks, or whether a data-rights tool actually works.
 
 ### PASS, WARN, FAIL, and N/A
 
@@ -155,7 +166,7 @@ For **Claude Desktop**, edit
 }
 ```
 
-That's it. Claude will now offer the fifteen `aadc.*` tools whenever
+That's it. Claude will now offer the eighteen `aadc.*` tools whenever
 you're working in a project that looks like it might be accessed by
 children.
 
@@ -187,9 +198,22 @@ export AADC_SDK_ALLOWLIST_PYTHON="fastapi pydantic ..."
 export AADC_PROTECTED_PATHS="path/to/sensitive/code/dir ..."
 export AADC_TRUSTED_HOSTS="yourapp.com partner.org apps.apple.com ..."
 export AADC_FIRST_PARTY_ORIGINS="yourapp.com help.yourapp.com ..."
+export AADC_DPIA_PATH="docs/regulations/aadc/DPIA.md"
+export AADC_AGE_STRATEGY="all-users"            # or leave unset for age-assurance
+export AADC_DATA_RIGHTS_PATHS="lib/account web/src/settings"
+export AADC_PRIVACY_POLICY_PATH="docs/privacy-policy.md"
 
 aadc audit .
 ```
+
+`AADC_DPIA_PATH` points the `dpia-present` audit at the DPIA document if it
+does not live at one of the default candidate paths. `AADC_AGE_STRATEGY`
+accepts `all-users` (you apply the code's protections to every user, route (b)
+of Standard 3) or is left unset to scan for an age-assurance mechanism (route
+(a)). `AADC_DATA_RIGHTS_PATHS` narrows the `data-rights-tools` scan to specific
+subtrees (space- or comma-separated, relative to the project root).
+`AADC_PRIVACY_POLICY_PATH` tells `policy-mentions-sdks` where the privacy
+policy lives.
 
 `AADC_TRUSTED_HOSTS` sets the host suffixes the link-reachability
 audit will probe. It defaults to common app-store, video, and forms
@@ -236,11 +260,16 @@ behalf of a project with project-specific allowlists.
 - **Doesn't make legal warranties.** Best-effort technical
   scaffolding. A regulator query may still require a paid
   third-party auditor.
-- **Doesn't automate the 6 judgement-based standards** (1
-  best-interests, 2 DPIA, 3 age-appropriate application, 12
-  profiling, 13 nudges, 15 online tools). For those, use the
-  conformance-statement template under `templates/` and let Claude
-  fill it in by reading your code + the ICO text.
+- **Doesn't automate the judgement in the judgement-based standards** (1
+  best-interests, 2 DPIA, 3 age-appropriate application, 12 profiling, 13
+  nudges, 15 online tools). Standards 2, 3, and 15 now have a *presence/process
+  heuristic* each (`dpia-present`, `age-assurance`, `data-rights-tools`): they
+  warn when an expected document or signal is missing, but they cannot judge
+  whether a DPIA is sound, whether age assurance is certain enough for the
+  risks, or whether a data-rights tool works and is prominent. Standards 1, 12,
+  and 13 have no automated check at all. For the substance of any of these, use
+  the conformance-statement template under `templates/` and let Claude fill it
+  in by reading your code + the ICO text.
 
 ## Repo contents
 
@@ -250,9 +279,9 @@ aadc-audit-mcp/
 ├── package.json, tsconfig.json
 ├── src/
 │   ├── cli.ts                 (dual-mode entry: MCP server OR CLI)
-│   ├── server.ts              (MCP server: 15 tools)
+│   ├── server.ts              (MCP server: 18 tools)
 │   ├── standards.ts           (ICO AADC text loader)
-│   └── audits/                (12 audit modules + support files)
+│   └── audits/                (15 audit modules + support files)
 │       ├── index.ts           (registry)
 │       ├── types.ts           (AuditResult, AuditOptions)
 │       ├── walk.ts            (fs traversal)
@@ -268,7 +297,10 @@ aadc-audit-mcp/
 │       ├── volume-cap.ts      (Standards 1, 14)
 │       ├── sentry-hygiene.ts  (Standards 7, 9)
 │       ├── hardcoded-url.ts   (Standards 4, 6)
-│       └── policy-mentions-sdks.ts (Standards 4, 9)
+│       ├── policy-mentions-sdks.ts (Standards 4, 9)
+│       ├── dpia-present.ts    (Standard 2, warn-only presence/process)
+│       ├── age-assurance.ts   (Standard 3, warn-only presence/process)
+│       └── data-rights-tools.ts (Standard 15, warn-only presence/process)
 ├── aadc/                      (canonical ICO text mirror)
 │   ├── 1-best-interests-of-the-child.md
 │   ├── ... (15 standards + executive summary)
@@ -282,7 +314,9 @@ aadc-audit-mcp/
 │   └── aadc-ci.yml            (drop-in GitHub Actions workflow)
 ├── examples/
 │   └── README.md              (per-language overrides cookbook)
-├── tests/                     (node:test suite + tests/fixtures/ project trees)
+├── tests/                     (node:test suite + tests/fixtures/ project trees;
+│                               tests/run.mjs is a dependency-free self-test
+│                               covering the three new presence/process audits)
 └── legacy-bash/
     └── ...                    (original bash implementation; kept for
                                 projects that can't depend on Node)
@@ -309,9 +343,12 @@ npm test        # compile via tsconfig.test.json and run the suite
 ```
 
 `npm test` compiles the tests with `tsconfig.test.json` and runs
-`node:test` against fixture project trees under `tests/fixtures/`. It
-adds no new dependencies (it uses Node's built-in test runner), so it
-runs anywhere the tool itself runs.
+`node:test` against fixture project trees under `tests/fixtures/`, then
+runs `tests/run.mjs`, a dependency-free self-test that checks the three
+presence/process audits (`dpia-present`, `age-assurance`,
+`data-rights-tools`) against their own fixtures. Both add no new
+dependencies (they use only Node built-ins), so they run anywhere the
+tool itself runs. `npm run test:selftest` runs just the self-test.
 
 ## Contributing
 

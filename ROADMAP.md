@@ -57,7 +57,13 @@ A regulator, a domain expert, or an independent reviewer reading
 
 - ✅ Fix the inverted launchUrl threat model (done).
 - ✅ Adversarial fixtures: at least one per audit, under
-  `tests/fixtures/`, exercised by `npm test` (delivered in 0.3.1).
+  `tests/fixtures/`, exercised by `npm test` (delivered in 0.3.1). 🚧 0.3.2
+  adds a second, dependency-free harness (`tests/run.mjs`, Node built-ins only)
+  that covers the three new presence/process audits (`dpia-present`,
+  `age-assurance`, `data-rights-tools`) against their own fixtures, also run by
+  `npm test`. Every audit still has at least one fixture, but coverage is now
+  split across two harnesses (the `node:test` suite for the older audits, the
+  self-test runner for the new three); unifying them is still open.
 - 🚧 `THREAT-MODELS.md`: per-check threat-model documentation.
 - ✅ `CHANGELOG.md` with the v0.1 to v0.2 Safari-leak story written
   up honestly. This is the credibility-building artefact.
@@ -93,6 +99,14 @@ A regulator, a domain expert, or an independent reviewer reading
 
 ### v0.4: "semantic"
 
+- 🚧 Standards 2, 3, and 15 now have an initial automated check each as of
+  0.3.2 (previously zero): `dpia-present`, `age-assurance`, and
+  `data-rights-tools`. These are warn-only **presence/process heuristics**:
+  they flag a missing DPIA document, a missing age-assurance signal, or a
+  missing data-rights tool, but they cannot judge whether the DPIA is sound,
+  whether age assurance is certain enough for the risks, or whether a tool
+  works and is prominent. The substantive judgement for these standards is
+  still the LLM-via-MCP work below.
 - Standard 13 nudge-pattern detector (LLM-driven; scans for streaks,
   daily-quest pressure, infinite scroll, social proof patterns).
 - Standard 12 profiling check (LLM reads the project's data-flow and

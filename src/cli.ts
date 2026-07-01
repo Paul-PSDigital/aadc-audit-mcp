@@ -10,7 +10,8 @@
 //                                  reading-grade, placeholders,
 //                                  link-reachability, volume-cap,
 //                                  sentry-hygiene, hardcoded-url,
-//                                  policy-mentions-sdks).
+//                                  policy-mentions-sdks, dpia-present,
+//                                  age-assurance, data-rights-tools).
 //   aadc standards             -> list the 15 AADC standards.
 //   aadc help                  -> this message.
 
@@ -46,6 +47,24 @@ function effectiveAllowlists(): AuditOptions['allowlists'] {
   const out: NonNullable<AuditOptions['allowlists']> = {};
   for (const [k, v] of Object.entries(raw)) {
     if (v && v.length > 0) out[k] = v;
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
+}
+
+// Build per-audit string overrides from env. Only include keys whose
+// env var is set, so each audit falls back to its built-in default.
+// Returns undefined when none are set.
+function effectiveOptions(): AuditOptions['options'] {
+  const out: Record<string, string> = {};
+  const map: Array<[string, string]> = [
+    ['AADC_DPIA_PATH', 'dpiaPath'],
+    ['AADC_AGE_STRATEGY', 'ageStrategy'],
+    ['AADC_DATA_RIGHTS_PATHS', 'dataRightsPaths'],
+    ['AADC_PRIVACY_POLICY_PATH', 'privacyPolicyPath'],
+  ];
+  for (const [envVar, key] of map) {
+    const v = process.env[envVar];
+    if (v) out[key] = v;
   }
   return Object.keys(out).length > 0 ? out : undefined;
 }
@@ -105,6 +124,7 @@ async function cmdAudit(id: string | undefined, root: string): Promise<number> {
   const opts: AuditOptions = {
     projectRoot: resolve(root),
     allowlists: effectiveAllowlists(),
+    options: effectiveOptions(),
   };
   let results: AuditResult[];
   if (!id) {
@@ -140,6 +160,9 @@ Usage:
   aadc audit:sentry-hygiene [root]
   aadc audit:hardcoded-url [root]
   aadc audit:policy-mentions-sdks [root]
+  aadc audit:dpia-present [root]
+  aadc audit:age-assurance [root]
+  aadc audit:data-rights-tools [root]
   aadc standards             List the 15 AADC standards.
   aadc help                  This message.
 
@@ -154,6 +177,10 @@ Env overrides (per-language allowlists, space- or comma-separated):
   AADC_TRUSTED_HOSTS         (link-reachability: host suffixes to probe)
   AADC_FIRST_PARTY_ORIGINS   (launchurl: origins treated as first-party)
   AADC_CHECK_LINKS=1         (link-reachability: enable outbound HTTP probes)
+  AADC_DPIA_PATH             (dpia-present: path to the DPIA document)
+  AADC_AGE_STRATEGY          (age-assurance: set to all-users to declare blanket application)
+  AADC_DATA_RIGHTS_PATHS     (data-rights-tools: subtrees to scan, space- or comma-separated)
+  AADC_PRIVACY_POLICY_PATH   (policy-mentions-sdks: path to the privacy policy)
 
 This tool runs entirely on your machine. Your source code never
 leaves the device.

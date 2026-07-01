@@ -14,6 +14,9 @@ import { auditVolumeCap } from './volume-cap.js';
 import { auditSentryHygiene } from './sentry-hygiene.js';
 import { auditHardcodedUrl } from './hardcoded-url.js';
 import { auditPolicyMentionsSdks } from './policy-mentions-sdks.js';
+import { auditDpiaPresent } from './dpia-present.js';
+import { auditAgeAssurance } from './age-assurance.js';
+import { auditDataRightsTools } from './data-rights-tools.js';
 
 export type AuditFn = (opts: AuditOptions) => Promise<AuditResult>;
 
@@ -30,6 +33,9 @@ export const AUDITS: Record<string, AuditFn> = {
   'sentry-hygiene': auditSentryHygiene,
   'hardcoded-url': auditHardcodedUrl,
   'policy-mentions-sdks': auditPolicyMentionsSdks,
+  'dpia-present': auditDpiaPresent,
+  'age-assurance': auditAgeAssurance,
+  'data-rights-tools': auditDataRightsTools,
 };
 
 export async function runAll(opts: AuditOptions): Promise<AuditResult[]> {

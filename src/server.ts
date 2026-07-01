@@ -62,6 +62,12 @@ const AUDIT_DESCRIPTIONS: Record<string, string> = {
     'Flag hardcoded URLs outside the CMS that bypass content review, in Dart and web source (.js/.ts/.html etc). Standards 4, 6.',
   'policy-mentions-sdks':
     'Warn-only check that the privacy policy names every external-service SDK the app depends on. Standards 4, 9.',
+  'dpia-present':
+    'Check that a Data Protection Impact Assessment document exists in-repo and is not an unfilled stub. Mandatory under Standard 2. Verifies presence and basic completeness only, not the substance of the assessment.',
+  'age-assurance':
+    'Heuristic warn-only check for an age-assurance / age-gate mechanism in code, or a declared apply-to-all-users stance (AADC_AGE_STRATEGY=all-users). Standard 3. Cannot judge whether age assurance is sufficiently certain.',
+  'data-rights-tools':
+    'Warn-only scan for tools that let children exercise data rights and report concerns: account/data deletion, data export/access, and a report/complaint route. Standard 15.',
 };
 
 // Map an audit id (kebab-case) to its MCP tool name, and back. The
@@ -82,7 +88,19 @@ function asOptions(args: Record<string, unknown> | undefined): AuditOptions {
     typeof args?.allowlists === 'object' && args?.allowlists
       ? (args.allowlists as AuditOptions['allowlists'])
       : undefined;
-  return { projectRoot, allowlists };
+  // Pass through string-valued options (paths, strategies, regexes) so
+  // per-audit overrides like dpiaPath / ageStrategy / dataRightsPaths /
+  // privacyPolicyPath are reachable from MCP callers too. Only keep
+  // entries whose value is a string.
+  let options: AuditOptions['options'];
+  if (typeof args?.options === 'object' && args.options) {
+    const out: Record<string, string> = {};
+    for (const [k, v] of Object.entries(args.options as Record<string, unknown>)) {
+      if (typeof v === 'string') out[k] = v;
+    }
+    if (Object.keys(out).length > 0) options = out;
+  }
+  return { projectRoot, allowlists, options };
 }
 
 export function renderResult(r: AuditResult): string {
@@ -106,7 +124,7 @@ function asTextContent(text: string) {
 
 export async function startMcpServer(): Promise<void> {
   const server = new Server(
-    { name: 'aadc-audit', version: '0.3.1' },
+    { name: 'aadc-audit', version: '0.3.2' },
     { capabilities: { tools: {} } },
   );
 
